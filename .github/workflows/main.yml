@@ -5,29 +5,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull KubeVirt Core Images
+      - name: Pull KubeVirt Core Images from Quay
         run: |
-          # 锁定稳定版本 v1.2.1
-          export KVERSION="v1.2.1"
+          # 切换到 Quay.io 源，这是 KubeVirt 的原生仓库
+          export KVERSION="v1.2.0"
+          export SOURCE="quay.io/kubevirt"
           
           images=("virt-operator" "virt-api" "virt-controller" "virt-handler" "virt-launcher")
           
           for img in "${images[@]}"; do
-            echo "Pulling kubevirt/${img}:${KVERSION}..."
-            docker pull kubevirt/${img}:${KVERSION}
+            echo "Pulling ${SOURCE}/${img}:${KVERSION}..."
+            docker pull ${SOURCE}/${img}:${KVERSION}
+            
+            # 为了兼容你的 YAML，我们给它打上 docker.io 的标签
+            docker tag ${SOURCE}/${img}:${KVERSION} kubevirt/${img}:v1.2.2
           done
           
           echo "Saving core images to tarball..."
-          docker save -o kubevirt-core-v1.2.1.tar \
-            kubevirt/virt-operator:${KVERSION} \
-            kubevirt/virt-api:${KVERSION} \
-            kubevirt/virt-controller:${KVERSION} \
-            kubevirt/virt-handler:${KVERSION} \
-            kubevirt/virt-launcher:${KVERSION}
+          docker save -o kubevirt-v1.2.2-offline.tar \
+            kubevirt/virt-operator:v1.2.2 \
+            kubevirt/virt-api:v1.2.2 \
+            kubevirt/virt-controller:v1.2.2 \
+            kubevirt/virt-handler:v1.2.2 \
+            kubevirt/virt-launcher:v1.2.2
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: uses: actions/upload-artifact@v4
         with:
-          name: kubevirt-core-bundle
-          path: kubevirt-core-v1.2.1.tar
+          name: kubevirt-offline-bundle
+          path: kubevirt-v1.2.2-offline.tar
           retention-days: 1
