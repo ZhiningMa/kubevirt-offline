@@ -1,5 +1,5 @@
 name: Download KubeVirt Offline Images
-on: [push, workflow_dispatch] # 支持手动触发
+on: [push, workflow_dispatch]
 
 jobs:
   build:
@@ -7,24 +7,30 @@ jobs:
     steps:
       - name: Pull KubeVirt Images
         run: |
-          export KVERSION="v1.2.2"
+          # 注意：镜像标签通常不带 'v'
+          export KVERSION="1.2.2"
+          
           docker pull kubevirt/virt-operator:${KVERSION}
           docker pull kubevirt/virt-api:${KVERSION}
           docker pull kubevirt/virt-controller:${KVERSION}
           docker pull kubevirt/virt-handler:${KVERSION}
           docker pull kubevirt/virt-launcher:${KVERSION}
           
+          # 顺便拉取 NVIDIA 设备插件 (为后续 GPU 准备)
+          docker pull nvcr.io/nvidia/k8s-device-plugin:v0.14.0
+          
           echo "Saving images to tarball..."
-          docker save -o kubevirt-v1.2.2.tar \
+          docker save -o kubevirt-1.2.2-bundle.tar \
             kubevirt/virt-operator:${KVERSION} \
             kubevirt/virt-api:${KVERSION} \
             kubevirt/virt-controller:${KVERSION} \
             kubevirt/virt-handler:${KVERSION} \
-            kubevirt/virt-launcher:${KVERSION}
+            kubevirt/virt-launcher:${KVERSION} \
+            nvcr.io/nvidia/k8s-device-plugin:v0.14.0
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kubevirt-v1.2.2-bundle
-          path: kubevirt-v1.2.2.tar
-          retention-days: 1 # 下载完就可以删了
+          name: kubevirt-bundle
+          path: kubevirt-1.2.2-bundle.tar
+          retention-days: 1
