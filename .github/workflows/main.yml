@@ -1,36 +1,33 @@
-name: Download KubeVirt Offline Images
+name: Download KubeVirt Core Images
 on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull KubeVirt Images
+      - name: Pull KubeVirt Core Images
         run: |
-          # 注意：镜像标签通常不带 'v'
-          export KVERSION="1.2.2"
+          # 锁定稳定版本 v1.2.1
+          export KVERSION="v1.2.1"
           
-          docker pull kubevirt/virt-operator:${KVERSION}
-          docker pull kubevirt/virt-api:${KVERSION}
-          docker pull kubevirt/virt-controller:${KVERSION}
-          docker pull kubevirt/virt-handler:${KVERSION}
-          docker pull kubevirt/virt-launcher:${KVERSION}
+          images=("virt-operator" "virt-api" "virt-controller" "virt-handler" "virt-launcher")
           
-          # 顺便拉取 NVIDIA 设备插件 (为后续 GPU 准备)
-          docker pull nvcr.io/nvidia/k8s-device-plugin:v0.14.0
+          for img in "${images[@]}"; do
+            echo "Pulling kubevirt/${img}:${KVERSION}..."
+            docker pull kubevirt/${img}:${KVERSION}
+          done
           
-          echo "Saving images to tarball..."
-          docker save -o kubevirt-1.2.2-bundle.tar \
+          echo "Saving core images to tarball..."
+          docker save -o kubevirt-core-v1.2.1.tar \
             kubevirt/virt-operator:${KVERSION} \
             kubevirt/virt-api:${KVERSION} \
             kubevirt/virt-controller:${KVERSION} \
             kubevirt/virt-handler:${KVERSION} \
-            kubevirt/virt-launcher:${KVERSION} \
-            nvcr.io/nvidia/k8s-device-plugin:v0.14.0
+            kubevirt/virt-launcher:${KVERSION}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kubevirt-bundle
-          path: kubevirt-1.2.2-bundle.tar
+          name: kubevirt-core-bundle
+          path: kubevirt-core-v1.2.1.tar
           retention-days: 1
