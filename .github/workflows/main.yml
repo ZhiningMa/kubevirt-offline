@@ -1,0 +1,30 @@
+name: Download KubeVirt Offline Images
+on: [push, workflow_dispatch] # 支持手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull KubeVirt Images
+        run: |
+          export KVERSION="v1.2.2"
+          docker pull kubevirt/virt-operator:${KVERSION}
+          docker pull kubevirt/virt-api:${KVERSION}
+          docker pull kubevirt/virt-controller:${KVERSION}
+          docker pull kubevirt/virt-handler:${KVERSION}
+          docker pull kubevirt/virt-launcher:${KVERSION}
+          
+          echo "Saving images to tarball..."
+          docker save -o kubevirt-v1.2.2.tar \
+            kubevirt/virt-operator:${KVERSION} \
+            kubevirt/virt-api:${KVERSION} \
+            kubevirt/virt-controller:${KVERSION} \
+            kubevirt/virt-handler:${KVERSION} \
+            kubevirt/virt-launcher:${KVERSION}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubevirt-v1.2.2-bundle
+          path: kubevirt-v1.2.2.tar
+          retention-days: 1 # 下载完就可以删了
